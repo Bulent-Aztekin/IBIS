@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAD-X | Radyoloji Bilgi Sistemi</title>
+<style>
+  :root {
+    --plum: #5c2a4d;
+    --plum-dark: #46203c;
+    --panel-dark: #262626;
+    --panel-darker: #1f1f1f;
+    --navy: #17233c;
+    --navy-header: #1f3153;
+    --navy-row: #1b2a48;
+    --navy-row-alt: #182540;
+    --navy-border: #2c3e63;
+    --navy-hover: #223a63;
+    --navy-selected: #2a4a80;
+    --text: #d7dbe3;
+    --text-dim: #8b93a3;
+    --text-faint: #5f6577;
+    --blue: #2f7bf0;
+    --warning: #e2a63b;
+    --acil: #e5484d;
+    --success: #3ecf8e;
+    --font: "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Üst mürdüm araç çubuğu ---------- */
+  .topbar {
+    background: linear-gradient(180deg, var(--plum) 0%, var(--plum-dark) 100%);
+    color: #f1e8ee;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-bottom: 1px solid #3a1a30;
+    flex: none;
+  }
+  .topbar .icon-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: #f1e8ee;
+    font-size: 15px;
+    padding: 5px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .topbar .icon-btn:hover { background: rgba(255,255,255,0.12); }
+  .topbar .icon-btn.small-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; }
+  .topbar .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.18); margin: 0 4px; }
+  .topbar .badge {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #2f7bf0;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 8px;
+    min-width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+  }
+  .topbar .toggle {
+    width: 30px; height: 16px; border-radius: 9px; background: rgba(255,255,255,0.25);
+    position: relative; cursor: pointer;
+  }
+  .topbar .toggle .knob { width: 12px; height: 12px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; }
+  .topbar .spacer { flex: 1; }
+  .topbar .exit { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+
+  /* ---------- Arama / filtre paneli ---------- */
+  .search-panel {
+    background: var(--panel-dark);
+    border-bottom: 1px solid #000;
+    padding: 12px 56px 12px 14px;
+    position: relative;
+    display: flex;
+    gap: 26px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    flex: none;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+  .field.wide { min-width: 220px; }
+  .field label { font-size: 10.5px; color: var(--text-dim); text-transform: none; }
+  .field .value-row { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #444; padding-bottom: 4px; }
+  .field .value-row input, .field .value-row select {
+    background: transparent; border: none; color: var(--text); font-size: 12.5px; outline: none; width: 100%;
+    font-family: var(--font);
+  }
+  .field .value-row select { appearance: none; cursor: pointer; }
+  .field .clear-x { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 13px; padding: 0 2px; }
+  .field .clear-x:hover { color: var(--acil); }
+  .field .chev { color: var(--text-faint); font-size: 10px; pointer-events: none; }
+
+  /* sağdaki dikey mavi ikon rayı */
+  .rail {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 40;
+  }
+  .rail .search-circle {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; cursor: pointer; border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .rail .search-circle:hover { background: #4a8cf5; }
+  .rail .rail-icon {
+    width: 30px; height: 26px; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--text-dim); font-size: 14px; cursor: pointer; border-radius: 4px;
+  }
+  .rail .rail-icon:hover { background: #333; color: var(--text); }
+  .rail .rail-icon.warning { color: var(--warning); }
+
+  /* ⋮ menü */
+  .dots-menu {
+    position: absolute;
+    top: 130px;
+    right: 8px;
+    background: #2b2b2e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    min-width: 230px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    display: none;
+    z-index: 100;
+    padding: 4px 0;
+  }
+  .dots-menu.open { display: block; }
+  .dots-menu .m-item {
+    padding: 10px 16px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+  }
+  .dots-menu .m-item:hover { background: #37373c; }
+  .dots-menu .m-item.reset { color: var(--text-dim); font-size: 11.5px; }
+  .dots-menu .divider { height: 1px; background: #3d3d40; margin: 4px 0; }
+  .dots-menu .m-item.insidental { color: var(--blue); font-weight: 600; }
+  .dots-menu .m-item.disabled { color: #55555a; cursor: not-allowed; }
+  .dots-menu .m-item.disabled:hover { background: transparent; }
+
+  .flyout {
+    position: absolute;
+    left: -181px;
+    top: -4px;
+    background: #2b2b2e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    display: none;
+    padding: 4px 0;
+  }
+  .flyout.open { display: block; }
+  .flyout .f-item { padding: 9px 14px; font-size: 12.5px; cursor: pointer; color: var(--text); }
+  .flyout .f-item:hover { background: #37373c; }
+  .flyout .f-item.acil { color: var(--acil); font-weight: 600; }
+
+  .selected-hint {
+    padding: 3px 16px 8px;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    border-top: 1px solid #3d3d40;
+    margin-top: 4px;
+  }
+
+  /* ---------- ikincil araç çubuğu (Filtrele) ---------- */
+  .subtoolbar {
+    background: var(--navy);
+    border-bottom: 1px solid var(--navy-border);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+  }
+  .subtoolbar .filtre-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #10192c;
+    border: 1px solid var(--navy-border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    max-width: 420px;
+  }
+  .subtoolbar .filtre-input-wrap input {
+    background: transparent; border: none; color: var(--text); font-size: 12.5px; outline: none; flex: 1;
+    font-family: var(--font);
+  }
+  .subtoolbar .icon-sm {
+    background: transparent; border: none; color: var(--text-dim); font-size: 14px; cursor: pointer; padding: 5px 8px; border-radius: 4px;
+  }
+  .subtoolbar .icon-sm:hover { background: #1f2f4f; color: var(--text); }
+  .subtoolbar .sonuc-sayisi { color: var(--text-dim); font-size: 11.5px; margin-left: auto; margin-right: 6px; }
+
+  /* ---------- Tablo ---------- */
+  .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; background: var(--navy); }
+  table { width: 100%; border-collapse: collapse; min-width: 1900px; }
+  thead th {
+    text-align: left;
+    padding: 9px 12px;
+    background: var(--navy-header);
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 1px solid var(--navy-border);
+    white-space: nowrap;
+    position: sticky; top: 0;
+  }
+  thead th .sort-arrows { color: var(--text-faint); font-size: 9px; margin-left: 4px; }
+  tbody tr { border-bottom: 1px solid var(--navy-border); background: var(--navy-row); cursor: pointer; }
+  tbody tr:nth-child(even) { background: var(--navy-row-alt); }
+  tbody tr:hover { background: var(--navy-hover); }
+  tbody tr.selected { background: var(--navy-selected) !important; box-shadow: inset 3px 0 0 var(--blue); }
+  tbody td { padding: 9px 12px; white-space: nowrap; color: var(--text); }
+  tbody td.dim { color: var(--text-dim); font-size: 11.5px; }
+
+  .durum-pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .durum-onaylayacaklarim { background: rgba(47,123,240,0.15); color: var(--blue); }
+  .durum-acil_raporlanacak { background: rgba(229,72,77,0.15); color: var(--acil); }
+  .durum-raporlayacaklarim { background: rgba(226,166,59,0.15); color: var(--warning); }
+  .durum-raporladiklarim { background: rgba(62,207,142,0.15); color: var(--success); }
+  .durum-raporlanan { background: rgba(139,147,163,0.15); color: var(--text-dim); }
+
+  .empty-state {
+    padding: 70px 0;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 14px;
+  }
+  .empty-state .glass { font-size: 46px; opacity: 0.5; margin-bottom: 14px; }
+
+  .pagination {
+    background: var(--navy);
+    border-top: 1px solid var(--navy-border);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-dim);
+    font-size: 12px;
+    flex: none;
+  }
+  .pagination button {
+    background: transparent; border: 1px solid var(--navy-border); color: var(--text-dim);
+    padding: 5px 12px; border-radius: 4px; font-size: 11.5px; cursor: pointer;
+  }
+  .pagination button:hover { color: var(--text); border-color: var(--text-dim); }
+
+  .banner {
+    background: rgba(62,207,142,0.12);
+    border-bottom: 1px solid rgba(62,207,142,0.4);
+    color: var(--success);
+    padding: 9px 16px;
+    font-size: 12.5px;
+    display: none;
+    flex: none;
+  }
+  .banner.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ================= ÜST ARAÇ ÇUBUĞU ================= -->
+<div class="topbar">
+  <button class="icon-btn" title="Liste">☰</button>
+  <button class="icon-btn" title="Sıralı Görünüm">▤</button>
+  <button class="icon-btn" title="Izgara">▦</button>
+  <button class="icon-btn" title="Görüntü">🖼</button>
+  <div class="toggle"><div class="knob"></div></div>
+  <span class="icon-btn small-label">JPG</span>
+  <div class="sep"></div>
+  <button class="icon-btn" title="Buluta Gönder">☁⬆<span class="badge">0</span></button>
+  <button class="icon-btn" title="Sıradaki">⏭<span class="badge">0</span></button>
+  <button class="icon-btn" title="İndir">⬇</button>
+  <button class="icon-btn" title="Gönder">➤</button>
+  <button class="icon-btn" title="Kablosuz">📶</button>
+  <button class="icon-btn small-label" title="PACS">P</button>
+  <button class="icon-btn" title="Geçmiş">↺</button>
+  <button class="icon-btn" title="Monitör">🖥</button>
+  <button class="icon-btn" title="Mesajlar">💬<span class="badge">0</span></button>
+  <div class="sep"></div>
+  <button class="icon-btn small-label">M1</button>
+  <button class="icon-btn small-label">M2</button>
+  <button class="icon-btn small-label">M3</button>
+  <button class="icon-btn small-label">PPI</button>
+  <div class="sep"></div>
+  <button class="icon-btn" title="Yardım">❓</button>
+  <button class="icon-btn" title="Güvenlik">🛡</button>
+  <button class="icon-btn" title="Bilgi">ⓘ</button>
+  <button class="icon-btn" title="Etiket">🏷</button>
+  <div class="spacer"></div>
+  <button class="icon-btn exit">ÇIKIŞ</button>
+  <button class="icon-btn" title="Dil">🌐</button>
+</div>
+
+<!-- ================= ARAMA / FİLTRE PANELİ ================= -->
+<div class="search-panel">
+  <div class="field wide">
+    <label>Çekim Tarihi</label>
+    <div class="value-row">
+      <input type="text" id="cekimTarihi" value="11.08.2026 - 17.08.2026" readonly>
+      <button class="clear-x" onclick="cekimTarihiTemizle()">✕</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>Yöntem</label>
+    <div class="value-row">
+      <select id="yontemFiltre" onchange="tabloyuUygula()">
+        <option value="">Tümü</option>
+        <option value="BT">BT</option>
+        <option value="MR">MR</option>
+        <option value="US">US</option>
+        <option value="XR">XR</option>
+        <option value="MG">Mamografi</option>
+      </select>
+      <span class="chev">▾</span>
+    </div>
+  </div>
+  <div class="field">
+    <label>Hasta TCKN</label>
+    <div class="value-row">
+      <input type="text" id="tcknFiltre" placeholder="TCKN girin" oninput="tabloyuUygula()">
+    </div>
+  </div>
+  <div class="field">
+    <label>Erişim Numarası</label>
+    <div class="value-row">
+      <input type="text" id="accessionFiltre" placeholder="Accession No" oninput="tabloyuUygula()">
+    </div>
+  </div>
+
+  <div class="rail">
+    <button class="search-circle" title="Ara" onclick="tabloyuUygula()">🔍</button>
+    <button class="rail-icon warning" title="Uyarılar">⚠</button>
+    <button class="rail-icon" title="Klasörler">🗂</button>
+    <button class="rail-icon" title="Diğer İşlemler" onclick="menuAcKapat(event)">⋮</button>
+
+    <div class="dots-menu" id="dotsMenu">
+      <div class="m-item reset" onclick="worklistUygula(null)">Tümünü Göster</div>
+      <div class="divider"></div>
+      <div class="m-item" onclick="worklistUygula('onaylayacaklarim')">Onaylayacaklarım</div>
+      <div class="m-item" onclick="worklistUygula('acil_raporlanacak')">Acil Raporlanacaklar</div>
+      <div class="m-item" onclick="worklistUygula('raporlayacaklarim')">Raporlayacaklarım</div>
+      <div class="m-item" onclick="worklistUygula('raporladiklarim')">Raporladıklarım</div>
+      <div class="m-item" onclick="worklistUygula('raporlanan')">Raporlanan</div>
+      <div class="divider"></div>
+      <div class="m-item insidental" id="insidentalMenuItem" onclick="flyoutAcKapat(event)">
+        İnsidental Bulgu Bildir ▶
+        <div class="flyout" id="insidentalFlyout">
+          <div class="f-item" onclick="bulguBildir('TAKIP', 1)">1 Ay Kontrol</div>
+          <div class="f-item" onclick="bulguBildir('TAKIP', 3)">3 Ay Kontrol</div>
+          <div class="f-item" onclick="bulguBildir('TAKIP', 6)">6 Ay Kontrol</div>
+          <div class="f-item acil" onclick="bulguBildir('ACIL', 0)">🔴 Acil Konsültasyon</div>
+        </div>
+      </div>
+      <div class="selected-hint" id="secimIpucu">Önce tablodan bir hasta satırı seçin.</div>
+    </div>
+  </div>
+</div>
+
+<div class="banner" id="basariBanner"></div>
+
+<!-- ================= İKİNCİL ARAÇ ÇUBUĞU ================= -->
+<div class="subtoolbar">
+  <div class="filtre-input-wrap">
+    <span>🔎</span>
+    <input type="text" id="serbestFiltre" placeholder="Filtrele" oninput="tabloyuUygula()">
+  </div>
+  <button class="icon-sm" title="Kopyala">📋</button>
+  <button class="icon-sm" title="Sırala">⇅</button>
+  <button class="icon-sm" title="Kolonlar">🗔</button>
+  <span class="sonuc-sayisi" id="sonucSayisi"></span>
+</div>
+
+<!-- ================= TABLO ================= -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Ad<span class="sort-arrows">⇅</span></th>
+        <th>Hastane<span class="sort-arrows">⇅</span></th>
+        <th>Accession<span class="sort-arrows">⇅</span></th>
+        <th>İstem Tarihi<span class="sort-arrows">⇅</span></th>
+        <th>Yöntem<span class="sort-arrows">⇅</span></th>
+        <th>TCKN<span class="sort-arrows">⇅</span></th>
+        <th>SUT<span class="sort-arrows">⇅</span></th>
+        <th>İsteyen<span class="sort-arrows">⇅</span></th>
+        <th>Bölüm<span class="sort-arrows">⇅</span></th>
+        <th>Tetkik<span class="sort-arrows">⇅</span></th>
+        <th>Çekim Tarihi<span class="sort-arrows">⇅</span></th>
+        <th>İstek Tarihi<span class="sort-arrows">⇅</span></th>
+        <th>Atanmış Radyolog<span class="sort-arrows">⇅</span></th>
+        <th>Atanmış Radyolog<span class="sort-arrows">⇅</span></th>
+        <th>Atanmış Sekreter<span class="sort-arrows">⇅</span></th>
+        <th>Kesit Sayısı<span class="sort-arrows">⇅</span></th>
+        <th>Durum<span class="sort-arrows">⇅</span></th>
+      </tr>
+    </thead>
+    <tbody id="hastaTablosu"></tbody>
+  </table>
+  <div class="empty-state" id="bosDurum" style="display:none;">
+    <div class="glass">🔍</div>
+    Kayıt bulunamadı
+  </div>
+</div>
+
+<div class="pagination">
+  <span id="sayfaBilgisi">0 - 0 of 0</span>
+  <button>◀ Önceki</button>
+  <button>Sonraki ▶</button>
+</div>
+
+<script>
+// Ayni Cloudflare Pages projesi altinda servis edildigi icin relative /api yeterli.
+// Yerelde farkli bir backend'e karsi test etmek isterseniz burayi degistirebilirsiniz.
+const API_BASE = "";
+
+// ---- Demo hasta verisi (tüm gerçek RIS kolonlarını içerecek şekilde) ----
+const hastalar = [
+  { ad: "Ayşe Kılıç", hastane: "Maltepe Hastanesi", accession: "ACC-100234", istem_tarihi: "26.08.2026", yontem: "BT", tckn: "12345678901", sut: "706860", isteyen: "Dr. Kemal Öz", bolum: "Göğüs Hast.", tetkik: "Toraks BT (Kontrastsız)", cekim_tarihi: "27.08.2026", istek_tarihi: "26.08.2026", radyolog1: "Dr. A. Demirtaş", radyolog2: "-", sekreter: "Elif Kaya", kesit: 340, durum: "raporlayacaklarim", bulgu_oneri: "Sağ akciğer üst lobda 8mm nodül" },
+  { ad: "Mehmet Demir", hastane: "Maltepe Hastanesi", accession: "ACC-100235", istem_tarihi: "27.08.2026", yontem: "MR", tckn: "23456789012", sut: "705120", isteyen: "Dr. Sibel Nur", bolum: "Dahiliye", tetkik: "Üst Batın MR", cekim_tarihi: "28.08.2026", istek_tarihi: "27.08.2026", radyolog1: "Dr. B. Yavuz", radyolog2: "Dr. C. Er", sekreter: "Elif Kaya", kesit: 512, durum: "onaylayacaklarim" },
+  { ad: "Fatma Şahin", hastane: "Maltepe Hastanesi", accession: "ACC-100236", istem_tarihi: "28.08.2026", yontem: "BT", tckn: "34567890123", sut: "706880", isteyen: "Dr. Onur Ak", bolum: "Genel Cerrahi", tetkik: "Batın BT (Kontrastlı)", cekim_tarihi: "29.08.2026", istek_tarihi: "28.08.2026", radyolog1: "Dr. A. Demirtaş", radyolog2: "-", sekreter: "Melis Su", kesit: 410, durum: "raporlayacaklarim", bulgu_oneri: "Sağ böbrek üst polde 14mm kistik lezyon" },
+  { ad: "Ali Yıldız", hastane: "Maltepe Hastanesi", accession: "ACC-100237", istem_tarihi: "29.08.2026", yontem: "MR", tckn: "45678901234", sut: "705310", isteyen: "Dr. Derya Sağ", bolum: "Nöroloji", tetkik: "Kranial MR", cekim_tarihi: "30.08.2026", istek_tarihi: "29.08.2026", radyolog1: "Dr. B. Yavuz", radyolog2: "-", sekreter: "Melis Su", kesit: 260, durum: "acil_raporlanacak" },
+  { ad: "Zeynep Arslan", hastane: "Maltepe Hastanesi", accession: "ACC-100238", istem_tarihi: "29.08.2026", yontem: "BT", tckn: "56789012345", sut: "706860", isteyen: "Dr. Kemal Öz", bolum: "Onkoloji", tetkik: "Toraks BT (Kontrastlı)", cekim_tarihi: "30.08.2026", istek_tarihi: "29.08.2026", radyolog1: "Dr. C. Er", radyolog2: "Dr. A. Demirtaş", sekreter: "Elif Kaya", kesit: 355, durum: "raporlayacaklarim", bulgu_oneri: "Tiroid sol lobda 11mm nodül, insidental" },
+  { ad: "Hüseyin Kaya", hastane: "Maltepe Hastanesi", accession: "ACC-100239", istem_tarihi: "24.08.2026", yontem: "US", tckn: "67890123456", sut: "701210", isteyen: "Dr. Onur Ak", bolum: "Üroloji", tetkik: "Üriner Sistem USG", cekim_tarihi: "25.08.2026", istek_tarihi: "24.08.2026", radyolog1: "Dr. C. Er", radyolog2: "-", sekreter: "Melis Su", kesit: 1, durum: "raporladiklarim" },
+  { ad: "Elif Öztürk", hastane: "Maltepe Hastanesi", accession: "ACC-100240", istem_tarihi: "23.08.2026", yontem: "MG", tckn: "78901234567", sut: "704430", isteyen: "Dr. Sibel Nur", bolum: "Kadın Doğum", tetkik: "Bilateral Mamografi", cekim_tarihi: "24.08.2026", istek_tarihi: "23.08.2026", radyolog1: "Dr. A. Demirtaş", radyolog2: "-", sekreter: "Elif Kaya", kesit: 4, durum: "raporlanan" },
+];
+
+const durumEtiket = {
+  onaylayacaklarim: "Onaylayacaklarım",
+  acil_raporlanacak: "Acil Raporlanacak",
+  raporlayacaklarim: "Raporlayacaklarım",
+  raporladiklarim: "Raporladıklarım",
+  raporlanan: "Raporlanan",
+};
+
+let aktifWorklist = null;   // ⋮ menüsünden seçilen kategori filtresi
+let seciliHastaIdx = null;  // tabloda tıklanan satır
+
+function cekimTarihiTemizle() {
+  document.getElementById("cekimTarihi").value = "";
+}
+
+function worklistUygula(kategori) {
+  aktifWorklist = kategori;
+  document.getElementById("dotsMenu").classList.remove("open");
+  tabloyuUygula();
+}
+
+function tabloyuUygula() {
+  const yontem = document.getElementById("yontemFiltre").value;
+  const tckn = document.getElementById("tcknFiltre").value.trim();
+  const accession = document.getElementById("accessionFiltre").value.trim().toLowerCase();
+  const serbest = document.getElementById("serbestFiltre").value.trim().toLowerCase();
+
+  const sonuc = hastalar.filter((h, idx) => {
+    if (aktifWorklist && h.durum !== aktifWorklist) return false;
+    if (yontem && h.yontem !== yontem) return false;
+    if (tckn && !h.tckn.includes(tckn)) return false;
+    if (accession && !h.accession.toLowerCase().includes(accession)) return false;
+    if (serbest) {
+      const hedef = `${h.ad} ${h.tckn} ${h.accession} ${h.tetkik}`.toLowerCase();
+      if (!hedef.includes(serbest)) return false;
+    }
+    return true;
+  });
+
+  satirCiz(sonuc);
+}
+
+function satirCiz(liste) {
+  const tbody = document.getElementById("hastaTablosu");
+  const bos = document.getElementById("bosDurum");
+  tbody.innerHTML = "";
+
+  if (liste.length === 0) {
+    bos.style.display = "block";
+    document.getElementById("sayfaBilgisi").textContent = "0 - 0 of 0";
+    document.getElementById("sonucSayisi").textContent = "";
+    return;
+  }
+  bos.style.display = "none";
+  document.getElementById("sayfaBilgisi").textContent = `1 - ${liste.length} of ${liste.length}`;
+  document.getElementById("sonucSayisi").textContent = `${liste.length} kayıt`;
+
+  liste.forEach((h) => {
+    const gercekIdx = hastalar.indexOf(h);
+    const tr = document.createElement("tr");
+    if (gercekIdx === seciliHastaIdx) tr.classList.add("selected");
+    tr.onclick = () => satirSec(gercekIdx);
+    tr.innerHTML = `
+      <td>${h.ad}</td>
+      <td class="dim">${h.hastane}</td>
+      <td class="dim">${h.accession}</td>
+      <td class="dim">${h.istem_tarihi}</td>
+      <td>${h.yontem}</td>
+      <td class="dim">${h.tckn}</td>
+      <td class="dim">${h.sut}</td>
+      <td class="dim">${h.isteyen}</td>
+      <td>${h.bolum}</td>
+      <td>${h.tetkik}</td>
+      <td class="dim">${h.cekim_tarihi}</td>
+      <td class="dim">${h.istek_tarihi}</td>
+      <td class="dim">${h.radyolog1}</td>
+      <td class="dim">${h.radyolog2}</td>
+      <td class="dim">${h.sekreter}</td>
+      <td class="dim">${h.kesit}</td>
+      <td><span class="durum-pill durum-${h.durum}">${durumEtiket[h.durum]}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function satirSec(idx) {
+  seciliHastaIdx = (seciliHastaIdx === idx) ? null : idx;
+  tabloyuUygula();
+  guncelleSecimIpucu();
+}
+
+function guncelleSecimIpucu() {
+  const ipucu = document.getElementById("secimIpucu");
+  const menuItem = document.getElementById("insidentalMenuItem");
+  if (seciliHastaIdx === null) {
+    ipucu.textContent = "Önce tablodan bir hasta satırı seçin.";
+    menuItem.classList.add("disabled");
+  } else {
+    ipucu.textContent = `Seçili hasta: ${hastalar[seciliHastaIdx].ad}`;
+    menuItem.classList.remove("disabled");
+  }
+}
+
+function menuAcKapat(evt) {
+  evt.stopPropagation();
+  document.getElementById("dotsMenu").classList.toggle("open");
+  document.getElementById("insidentalFlyout").classList.remove("open");
+}
+
+function flyoutAcKapat(evt) {
+  evt.stopPropagation();
+  if (seciliHastaIdx === null) return;
+  document.getElementById("insidentalFlyout").classList.toggle("open");
+}
+
+document.addEventListener("click", () => {
+  document.getElementById("dotsMenu").classList.remove("open");
+  document.getElementById("insidentalFlyout").classList.remove("open");
+});
+
+async function bulguBildir(oncelik, sureAy) {
+  if (seciliHastaIdx === null) return;
+  const h = hastalar[seciliHastaIdx];
+  const bulguMetni = h.bulgu_oneri || "İnsidental bulgu saptandı, klinik korelasyon önerilir.";
+
+  const payload = {
+    hasta_ad: h.ad,
+    tckn: h.tckn,
+    tetkik: h.tetkik,
+    bolum: h.bolum,
+    bulgu: bulguMetni,
+    oncelik: oncelik,
+    sure_ay: sureAy,
+    hastane: h.hastane,
+    accession: h.accession,
+    isteyen: h.isteyen,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/api/vaka-olustur`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("İstek başarısız");
+
+    const banner = document.getElementById("basariBanner");
+    banner.textContent = `✓ "${h.ad}" için insidental bulgu İBİS'e bildirildi (${oncelik === "ACIL" ? "ACİL" : sureAy + " ay kontrol"}).`;
+    banner.classList.add("show");
+    setTimeout(() => banner.classList.remove("show"), 4000);
+
+    seciliHastaIdx = null;
+    tabloyuUygula();
+    guncelleSecimIpucu();
+  } catch (err) {
+    alert("İBİS'e bağlanılamadı. Cloudflare Pages Functions / D1 bağlantısını kontrol edin. Hata: " + err.message);
+  } finally {
+    document.getElementById("dotsMenu").classList.remove("open");
+    document.getElementById("insidentalFlyout").classList.remove("open");
+  }
+}
+
+tabloyuUygula();
+guncelleSecimIpucu();
+</script>
+
+</body>
+</html>

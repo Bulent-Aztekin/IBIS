@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>İBİS | İnsidental Bulgu Takip Sistemi</title>
+<style>
+  :root {
+    --plum: #5c2a4d;
+    --plum-dark: #46203c;
+    --navy: #17233c;
+    --navy-panel: #1b2a48;
+    --navy-panel-alt: #182540;
+    --navy-header: #1f3153;
+    --navy-border: #2c3e63;
+    --navy-hover: #223a63;
+    --navy-selected: #2a4a80;
+    --sidebar: #131d33;
+    --text: #d7dbe3;
+    --text-dim: #8b93a3;
+    --text-faint: #5f6577;
+    --blue: #2f7bf0;
+    --warning: #e2a63b;
+    --warning-soft: rgba(226,166,59,0.14);
+    --acil: #e5484d;
+    --acil-soft: rgba(229,72,77,0.14);
+    --success: #3ecf8e;
+    --success-soft: rgba(62,207,142,0.14);
+    --eskale: #b968f0;
+    --eskale-soft: rgba(185,104,240,0.14);
+    --font: "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+
+  /* ---------------- Sidebar ---------------- */
+  .sidebar {
+    width: 208px;
+    flex: none;
+    background: var(--sidebar);
+    border-right: 1px solid var(--navy-border);
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar .brand {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--navy-border);
+    background: linear-gradient(180deg, var(--plum) 0%, var(--plum-dark) 100%);
+  }
+  .sidebar .brand .ad { font-size: 16px; font-weight: 800; letter-spacing: 0.4px; color: #f6ecf2; }
+  .sidebar .brand .aciklama { font-size: 10.5px; color: #e3cfdc; margin-top: 3px; line-height: 1.4; }
+  .sidebar nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
+  .sidebar .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 6px; cursor: pointer;
+    color: var(--text-dim); font-size: 12.5px; font-weight: 600;
+    margin-bottom: 2px; position: relative;
+  }
+  .sidebar .nav-item .ikon { font-size: 14px; width: 18px; text-align: center; }
+  .sidebar .nav-item:hover { background: var(--navy-hover); color: var(--text); }
+  .sidebar .nav-item.active { background: var(--navy-selected); color: #fff; }
+  .sidebar .nav-item .rozet-sayi {
+    margin-left: auto; background: var(--navy-border); color: var(--text);
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; min-width: 16px; text-align: center;
+  }
+  .sidebar .nav-item.klinisyen .rozet-sayi.dolu { background: var(--blue); color: #fff; }
+  .sidebar .nav-item.eskalasyon .rozet-sayi.dolu { background: var(--eskale); color: #fff; }
+  .sidebar .alt-bilgi {
+    padding: 12px 16px; border-top: 1px solid var(--navy-border);
+    font-size: 10.5px; color: var(--text-faint); line-height: 1.5;
+  }
+
+  /* ---------------- Ana içerik ---------------- */
+  .ana { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+
+  .topbar {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex; align-items: center; gap: 16px; flex: none;
+    background: var(--navy-panel);
+  }
+  .topbar .baslik { font-size: 15.5px; font-weight: 800; }
+  .topbar .baslik .alt { font-size: 11px; font-weight: 400; color: var(--text-dim); margin-left: 8px; }
+  .topbar .spacer { flex: 1; }
+  .sim-saat {
+    font-size: 11px; color: var(--text-dim); background: var(--navy-panel-alt);
+    border: 1px solid var(--navy-border); border-radius: 6px; padding: 7px 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sim-saat b { color: var(--text); }
+  .btn {
+    border: none; border-radius: 6px; padding: 9px 15px; font-size: 12px; font-weight: 700;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font);
+  }
+  .btn-ilerle { background: var(--blue); color: #fff; }
+  .btn-ilerle:hover { background: #4a8cf5; }
+  .btn-ilerle:disabled { opacity: 0.5; cursor: default; }
+  .btn-sifirla { background: transparent; color: var(--text-dim); border: 1px solid var(--navy-border); }
+  .btn-sifirla:hover { color: var(--text); border-color: var(--text-dim); }
+
+  .icerik { flex: 1; overflow-y: auto; padding: 20px 22px 40px; }
+
+  .baglanti-uyarisi {
+    background: var(--acil-soft); border: 1px solid rgba(229,72,77,0.4); color: var(--acil);
+    padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; display: none;
+  }
+  .baglanti-uyarisi.show { display: block; }
+
+  /* KPI kartları */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .kpi-card {
+    background: var(--navy-panel); border: 1px solid var(--navy-border); border-radius: 10px; padding: 14px 16px;
+    cursor: pointer; transition: border-color .15s;
+  }
+  .kpi-card:hover { border-color: var(--blue); }
+  .kpi-card .label { font-size: 11px; color: var(--text-dim); margin-bottom: 7px; }
+  .kpi-card .deger { font-size: 26px; font-weight: 800; }
+  .kpi-card.bekleyen .deger { color: var(--warning); }
+  .kpi-card.klinisyen .deger { color: var(--blue); }
+  .kpi-card.onay .deger { color: var(--success); }
+  .kpi-card.eskale .deger { color: var(--eskale); }
+
+  .bolum-baslik {
+    font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-dim); margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .bolum-baslik:first-child { margin-top: 0; }
+
+  .eskalasyon-alarmi {
+    background: var(--eskale-soft); border: 1px solid rgba(185,104,240,0.45); color: var(--eskale);
+    padding: 12px 16px; border-radius: 8px; font-size: 12.5px; margin-bottom: 16px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Onay kartları (Panel görünümü) */
+  .onay-listesi { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .onay-karti {
+    background: var(--navy-panel); border: 1px solid var(--navy-border); border-left: 3px solid var(--blue);
+    border-radius: 8px; padding: 13px 16px; display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  }
+  .onay-karti.acil { border-left-color: var(--acil); }
+  .onay-karti.eskale { border-left-color: var(--eskale); }
+  .onay-karti .bilgi { flex: 1; min-width: 0; }
+  .onay-karti .isim { font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
+  .onay-karti .detay { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+  .rozet-oncelik { display: inline-block; padding: 2px 7px; border-radius: 8px; font-size: 10px; font-weight: 800; margin-right: 6px; text-transform: uppercase; }
+  .rozet-oncelik.acil { background: var(--acil-soft); color: var(--acil); }
+  .rozet-oncelik.takip { background: var(--warning-soft); color: var(--warning); }
+  .aksiyonlar-mini { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-mini { border: none; border-radius: 6px; padding: 7px 11px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .btn-mini.onay { background: var(--success-soft); color: var(--success); }
+  .btn-mini.onay:hover { background: var(--success); color: #08281c; }
+  .btn-mini.ertele { background: var(--navy-panel-alt); color: var(--text-dim); }
+  .btn-mini.ertele:hover { background: var(--navy-border); color: var(--text); }
+  .btn-mini.eskale { background: var(--eskale-soft); color: var(--eskale); }
+  .btn-mini.eskale:hover { background: var(--eskale); color: #2a0a44; }
+
+  .bos-durum {
+    background: var(--navy-panel); border: 1px dashed var(--navy-border); border-radius: 10px;
+    padding: 26px; text-align: center; color: var(--text-dim); font-size: 12.5px;
+  }
+
+  /* Filtre satırı */
+  .filtre-satiri { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .filtre-satiri input, .filtre-satiri select {
+    background: var(--navy-panel); border: 1px solid var(--navy-border); color: var(--text);
+    padding: 8px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font); outline: none;
+  }
+  .filtre-satiri input::placeholder { color: var(--text-faint); }
+  .filtre-satiri .sonuc-sayisi { font-size: 11px; color: var(--text-faint); margin-left: auto; }
+
+  /* Worklist tablosu */
+  .tablo-sarici { border: 1px solid var(--navy-border); border-radius: 8px; overflow: hidden; }
+  table.worklist { width: 100%; border-collapse: collapse; }
+  .worklist thead th {
+    background: var(--navy-header); color: var(--text-dim); text-align: left; font-weight: 700;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px;
+    border-bottom: 1px solid var(--navy-border); white-space: nowrap;
+  }
+  .worklist tbody tr { background: var(--navy-panel); cursor: pointer; border-bottom: 1px solid var(--navy-border); }
+  .worklist tbody tr:nth-child(even) { background: var(--navy-panel-alt); }
+  .worklist tbody tr:hover { background: var(--navy-hover); }
+  .worklist tbody tr.secili { background: var(--navy-selected); }
+  .worklist tbody tr:last-child { border-bottom: none; }
+  .worklist td { padding: 10px 12px; font-size: 12px; vertical-align: middle; }
+  .worklist td.dim { color: var(--text-dim); }
+  .worklist td.bulgu-hucre { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
+
+  .durum-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
+  .durum-pill.BEKLEMEDE { background: var(--warning-soft); color: var(--warning); }
+  .durum-pill.KLINISYEN_BEKLENIYOR { background: rgba(47,123,240,0.16); color: var(--blue); }
+  .durum-pill.ONAYLANDI { background: var(--success-soft); color: var(--success); }
+  .durum-pill.ESKALE_EDILDI { background: var(--eskale-soft); color: var(--eskale); }
+
+  /* ---------------- Drawer (Detay Paneli) ---------------- */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(10,14,24,0.5); display: none; z-index: 200;
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: -440px; width: 420px; height: 100vh; background: var(--sidebar);
+    border-left: 1px solid var(--navy-border); z-index: 201; transition: right .2s ease;
+    display: flex; flex-direction: column; box-shadow: -8px 0 30px rgba(0,0,0,0.4);
+  }
+  .drawer.open { right: 0; }
+  .drawer .drawer-head {
+    padding: 18px 20px; border-bottom: 1px solid var(--navy-border);
+    display: flex; justify-content: space-between; align-items: flex-start;
+    background: linear-gradient(180deg, var(--plum) 0%, var(--plum-dark) 100%);
+  }
+  .drawer .drawer-head .isim { font-size: 16px; font-weight: 800; color: #fff; }
+  .drawer .drawer-head .tckn { font-size: 11px; color: #e3cfdc; margin-top: 3px; }
+  .drawer .kapat { background: none; border: none; color: #f1e8ee; font-size: 18px; cursor: pointer; line-height: 1; }
+  .drawer .drawer-govde { padding: 18px 20px; overflow-y: auto; flex: 1; }
+  .drawer .alan { margin-bottom: 16px; }
+  .drawer .alan .etiket { font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .drawer .alan .deger { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .drawer .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .drawer textarea {
+    width: 100%; min-height: 70px; background: var(--navy-panel); border: 1px solid var(--navy-border);
+    color: var(--text); border-radius: 6px; padding: 9px 11px; font-family: var(--font); font-size: 12.5px; resize: vertical;
+  }
+  .drawer .zaman-cizgisi { border-left: 2px solid var(--navy-border); padding-left: 12px; margin-top: 4px; }
+  .drawer .zaman-cizgisi .adim { font-size: 11.5px; color: var(--text-dim); margin-bottom: 8px; position: relative; }
+  .drawer .zaman-cizgisi .adim::before { content: "●"; position: absolute; left: -16.5px; color: var(--navy-border); }
+  .drawer .drawer-alt {
+    padding: 16px 20px; border-top: 1px solid var(--navy-border); display: flex; flex-direction: column; gap: 8px;
+  }
+  .drawer .btn-buyuk { width: 100%; padding: 12px; border-radius: 7px; font-size: 12.5px; font-weight: 700; border: none; cursor: pointer; }
+  .drawer .btn-buyuk.onay { background: var(--success); color: #08281c; }
+  .drawer .btn-buyuk.onay:hover { background: #55e3a4; }
+  .drawer .btn-buyuk.ertele { background: var(--navy-panel-alt); color: var(--text); border: 1px solid var(--navy-border); }
+  .drawer .btn-buyuk.ertele:hover { background: var(--navy-border); }
+  .drawer .btn-buyuk.eskale { background: var(--eskale-soft); color: var(--eskale); border: 1px solid rgba(185,104,240,0.4); }
+  .drawer .btn-buyuk.eskale:hover { background: var(--eskale); color: #2a0a44; }
+
+  .toast {
+    position: fixed; bottom: 22px; right: 22px; background: var(--navy-panel); border: 1px solid var(--navy-border);
+    border-left: 3px solid var(--success); padding: 12px 18px; border-radius: 8px; font-size: 12.5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45); display: none; z-index: 300; max-width: 340px;
+  }
+  .toast.show { display: block; }
+  .toast.hata { border-left-color: var(--acil); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="ad">🏥 İBİS</div>
+    <div class="aciklama">İnsidental Bulgu Takip Sistemi — Yönetim Paneli</div>
+  </div>
+  <nav>
+    <div class="nav-item active" data-view="panel" onclick="gorunumDegistir('panel')">
+      <span class="ikon">📊</span> Panel
+    </div>
+    <div class="nav-item" data-view="liste" onclick="gorunumDegistir('liste')">
+      <span class="ikon">📋</span> Takip Listesi <span class="rozet-sayi" id="rozetListe">0</span>
+    </div>
+    <div class="nav-item klinisyen" data-view="klinisyen" onclick="gorunumDegistir('klinisyen')">
+      <span class="ikon">🩺</span> Klinisyen Onayı <span class="rozet-sayi" id="rozetKlinisyen">0</span>
+    </div>
+    <div class="nav-item eskalasyon" data-view="eskalasyon" onclick="gorunumDegistir('eskalasyon')">
+      <span class="ikon">🚨</span> Eskalasyon <span class="rozet-sayi" id="rozetEskale">0</span>
+    </div>
+    <div class="nav-item" data-view="raporlar" onclick="gorunumDegistir('raporlar')">
+      <span class="ikon">✅</span> Raporlar
+    </div>
+  </nav>
+  <div class="alt-bilgi">RİS ↔ HBYS arası<br>otonom takip katmanı</div>
+</aside>
+
+<div class="ana">
+  <div class="topbar">
+    <div class="baslik" id="gorunumBasligi">Panel<span class="alt">Genel durum özeti</span></div>
+    <div class="spacer"></div>
+    <div class="sim-saat">🕒 Simülasyon Tarihi: <b id="simTarihi">—</b></div>
+    <button class="btn btn-sifirla" onclick="simulasyonuSifirla()">↺ Sıfırla</button>
+    <button class="btn btn-ilerle" id="ilerleBtn" onclick="birAySar()">⏩ +1 Ay İleri Sar</button>
+  </div>
+
+  <div class="icerik">
+    <div class="baglanti-uyarisi" id="baglantiUyarisi">
+      ⚠ API'ye bağlanılamıyor. Cloudflare Pages Functions + D1 bağlantısını (veya yerel geliştirme sunucunuzu) kontrol edin.
+    </div>
+
+    <div id="eskalasyonAlarmi" class="eskalasyon-alarmi" style="display:none;">
+      🚨 <span id="eskalasyonAlarmMetni"></span>
+    </div>
+
+    <!-- PANEL GÖRÜNÜMÜ -->
+    <div id="view-panel">
+      <div class="kpi-grid">
+        <div class="kpi-card bekleyen" onclick="gorunumDegistir('liste')">
+          <div class="label">Bekleyen Vaka</div>
+          <div class="deger" id="kpiBekleyen">0</div>
+        </div>
+        <div class="kpi-card klinisyen" onclick="gorunumDegistir('klinisyen')">
+          <div class="label">Klinisyen Onayı Bekleyen</div>
+          <div class="deger" id="kpiKlinisyen">0</div>
+        </div>
+        <div class="kpi-card onay" onclick="gorunumDegistir('raporlar')">
+          <div class="label">Onaylanan</div>
+          <div class="deger" id="kpiOnaylanan">0</div>
+        </div>
+        <div class="kpi-card eskale" onclick="gorunumDegistir('eskalasyon')">
+          <div class="label">Eskale Edilen</div>
+          <div class="deger" id="kpiEskale">0</div>
+        </div>
+      </div>
+
+      <div class="bolum-baslik">⚡ Öncelikli Aksiyon Gerektiren Vakalar</div>
+      <div class="onay-listesi" id="oncelikliListesi"></div>
+    </div>
+
+    <!-- TAKIP LİSTESİ / KLİNİSYEN ONAYI / ESKALASYON / RAPORLAR ORTAK TABLO GÖRÜNÜMÜ -->
+    <div id="view-tablo" style="display:none;">
+      <div class="filtre-satiri">
+        <input type="text" id="serbestFiltre" placeholder="Hasta adı, TCKN veya tetkik ara..." oninput="tabloyuCiz()">
+        <select id="oncelikFiltre" onchange="tabloyuCiz()">
+          <option value="">Tüm Öncelikler</option>
+          <option value="ACIL">Acil</option>
+          <option value="TAKIP">Takip</option>
+        </select>
+        <span class="sonuc-sayisi" id="sonucSayisi"></span>
+      </div>
+      <div class="tablo-sarici">
+        <table class="worklist">
+          <thead>
+            <tr>
+              <th>Hasta</th>
+              <th>TCKN</th>
+              <th>Hastane</th>
+              <th>Tetkik</th>
+              <th>Bölüm</th>
+              <th>Bulgu</th>
+              <th>Öncelik</th>
+              <th>Kayıt Tarihi</th>
+              <th>Kontrol Tarihi</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody id="worklistGovde"></tbody>
+        </table>
+      </div>
+      <div class="bos-durum" id="tabloBosDurum" style="display:none; margin-top: 12px;">Bu görünümde kayıt bulunamadı.</div>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="drawerKapat()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <div class="isim" id="drawerIsim">—</div>
+      <div class="tckn" id="drawerTckn">—</div>
+    </div>
+    <button class="kapat" onclick="drawerKapat()">✕</button>
+  </div>
+  <div class="drawer-govde">
+    <div class="alan">
+      <div class="etiket">Tetkik / Bölüm</div>
+      <div class="deger" id="drawerTetkik">—</div>
+    </div>
+    <div class="alan">
+      <div class="etiket">İnsidental Bulgu</div>
+      <div class="deger" id="drawerBulgu">—</div>
+    </div>
+    <div class="grid-2">
+      <div class="alan">
+        <div class="etiket">Kayıt Tarihi</div>
+        <div class="deger" id="drawerKayit">—</div>
+      </div>
+      <div class="alan">
+        <div class="etiket">Kontrol Tarihi</div>
+        <div class="deger" id="drawerKontrol">—</div>
+      </div>
+    </div>
+    <div class="alan">
+      <div class="etiket">Durum</div>
+      <div class="deger"><span class="durum-pill" id="drawerDurumPill">—</span></div>
+    </div>
+    <div class="alan">
+      <div class="etiket">Klinisyen Notu / Kontrol Randevusu</div>
+      <textarea id="drawerNot" placeholder="Örn: 12.11.2026 tarihine Radyoloji kontrol BT randevusu oluşturuldu."></textarea>
+    </div>
+  </div>
+  <div class="drawer-alt">
+    <button class="btn-buyuk onay" id="drawerOnayBtn" onclick="drawerAksiyon('ONAYLA')">✓ Kontrol Randevusu Oluştur ve Onayla</button>
+    <button class="btn-buyuk ertele" onclick="drawerAksiyon('REDDET')">Ertele</button>
+    <button class="btn-buyuk eskale" onclick="drawerAksiyon('ESKALE_ET')">⚠ Eskale Et</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = ""; // Ayni Cloudflare Pages projesi altinda relative /api
+
+let tumVakalar = [];
+let simulasyonBilgisi = { ilerleme_gun: 0, simulasyon_tarihi: null };
+let aktifGorunum = "panel";
+let seciliVakaId = null;
+
+const GORUNUM_BASLIK = {
+  panel: ["Panel", "Genel durum özeti"],
+  liste: ["Takip Listesi", "Tüm insidental bulgu vakaları"],
+  klinisyen: ["Klinisyen Onayı", "Kontrol zamanı gelmiş, hekim onayı bekleyen vakalar"],
+  eskalasyon: ["Eskalasyon", "Onay süresi aşılmış, acil müdahale gereken vakalar"],
+  raporlar: ["Raporlar", "Onaylanmış ve randevusu oluşturulmuş vakalar"],
+};
+
+function tarihFormatla(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("tr-TR");
+  } catch { return iso; }
+}
+
+function toastGoster(msg, hata = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.toggle("hata", hata);
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+// ---------------- Görünüm yönetimi ----------------
+
+function gorunumDegistir(gorunum) {
+  aktifGorunum = gorunum;
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.view === gorunum));
+
+  const [baslik, alt] = GORUNUM_BASLIK[gorunum];
+  document.getElementById("gorunumBasligi").innerHTML = `${baslik}<span class="alt">${alt}</span>`;
+
+  document.getElementById("view-panel").style.display = gorunum === "panel" ? "block" : "none";
+  document.getElementById("view-tablo").style.display = gorunum === "panel" ? "none" : "block";
+
+  tabloyuCiz();
+}
+
+function gorunumeGoreFiltrele(liste) {
+  if (aktifGorunum === "klinisyen") return liste.filter(v => v.durum === "KLINISYEN_BEKLENIYOR");
+  if (aktifGorunum === "eskalasyon") return liste.filter(v => v.durum === "ESKALE_EDILDI");
+  if (aktifGorunum === "raporlar") return liste.filter(v => v.durum === "ONAYLANDI");
+  return liste; // liste / panel
+}
+
+// ---------------- Veri çekme ----------------
+
+async function verileriYukle() {
+  try {
+    const [ozetRes, vakaRes] = await Promise.all([
+      fetch(`${API_BASE}/api/ozet`),
+      fetch(`${API_BASE}/api/vakalar`),
+    ]);
+    if (!ozetRes.ok || !vakaRes.ok) throw new Error("API hatası");
+
+    document.getElementById("baglantiUyarisi").classList.remove("show");
+
+    const ozet = await ozetRes.json();
+    document.getElementById("kpiBekleyen").textContent = ozet.BEKLEMEDE ?? 0;
+    document.getElementById("kpiKlinisyen").textContent = ozet.KLINISYEN_BEKLENIYOR ?? 0;
+    document.getElementById("kpiOnaylanan").textContent = ozet.ONAYLANDI ?? 0;
+    document.getElementById("kpiEskale").textContent = ozet.ESKALE_EDILDI ?? 0;
+
+    document.getElementById("rozetListe").textContent = (ozet.BEKLEMEDE ?? 0) + (ozet.KLINISYEN_BEKLENIYOR ?? 0) + (ozet.ONAYLANDI ?? 0) + (ozet.ESKALE_EDILDI ?? 0);
+    const rozetKlinisyen = document.getElementById("rozetKlinisyen");
+    rozetKlinisyen.textContent = ozet.KLINISYEN_BEKLENIYOR ?? 0;
+    rozetKlinisyen.classList.toggle("dolu", (ozet.KLINISYEN_BEKLENIYOR ?? 0) > 0);
+    const rozetEskale = document.getElementById("rozetEskale");
+    rozetEskale.textContent = ozet.ESKALE_EDILDI ?? 0;
+    rozetEskale.classList.toggle("dolu", (ozet.ESKALE_EDILDI ?? 0) > 0);
+
+    const alarm = document.getElementById("eskalasyonAlarmi");
+    if ((ozet.ESKALE_EDILDI ?? 0) > 0) {
+      document.getElementById("eskalasyonAlarmMetni").textContent = `${ozet.ESKALE_EDILDI} vaka onay süresini aştı ve otomatik eskale edildi — acil klinik müdahale gerekiyor.`;
+      alarm.style.display = "flex";
+    } else {
+      alarm.style.display = "none";
+    }
+
+    if (ozet.simulasyon) {
+      simulasyonBilgisi = ozet.simulasyon;
+      document.getElementById("simTarihi").textContent = tarihFormatla(simulasyonBilgisi.simulasyon_tarihi);
+    }
+
+    const data = await vakaRes.json();
+    tumVakalar = data.vakalar || [];
+
+    oncelikliListesiniCiz();
+    tabloyuCiz();
+  } catch (err) {
+    document.getElementById("baglantiUyarisi").classList.add("show");
+  }
+}
+
+// ---------------- Panel: öncelikli liste ----------------
+
+function oncelikliListesiniCiz() {
+  const container = document.getElementById("oncelikliListesi");
+  const oncelikliler = tumVakalar.filter(v => v.durum === "KLINISYEN_BEKLENIYOR" || v.durum === "ESKALE_EDILDI");
+
+  if (oncelikliler.length === 0) {
+    container.innerHTML = `<div class="bos-durum">Şu anda aksiyon bekleyen vaka yok. "+1 Ay İleri Sar" ile kontrol zamanı gelen vakaları buraya getirebilirsiniz.</div>`;
+    return;
+  }
+
+  container.innerHTML = oncelikliler.map(v => {
+    const eskale = v.durum === "ESKALE_EDILDI";
+    const sinifi = eskale ? "eskale" : (v.oncelik === "ACIL" ? "acil" : "");
+    return `
+    <div class="onay-karti ${sinifi}">
+      <div class="bilgi">
+        <div class="isim">
+          <span class="rozet-oncelik ${v.oncelik === 'ACIL' ? 'acil' : 'takip'}">${v.oncelik === 'ACIL' ? 'Acil' : v.sure_ay + ' Ay Kontrol'}</span>
+          ${v.hasta_ad} ${eskale ? "— <span style='color:var(--eskale)'>ESKALE EDİLDİ</span>" : ""}
+        </div>
+        <div class="detay">${v.tetkik} — ${v.bulgu}<br>Kayıt: ${tarihFormatla(v.kayit_tarihi)} · Kontrol zamanı: ${tarihFormatla(v.kontrol_tarihi)}</div>
+      </div>
+      <div class="aksiyonlar-mini">
+        <button class="btn-mini onay" onclick="hizliAksiyon('${v.id}', 'ONAYLA')">✓ Onayla</button>
+        <button class="btn-mini ertele" onclick="hizliAksiyon('${v.id}', 'REDDET')">Ertele</button>
+        <button class="btn-mini eskale" onclick="hizliAksiyon('${v.id}', 'ESKALE_ET')">⚠ Eskale</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ---------------- Worklist tablosu ----------------
+
+function tabloyuCiz() {
+  if (aktifGorunum === "panel") return;
+
+  const serbest = (document.getElementById("serbestFiltre")?.value || "").trim().toLowerCase();
+  const oncelik = document.getElementById("oncelikFiltre")?.value || "";
+
+  let liste = gorunumeGoreFiltrele(tumVakalar);
+  if (oncelik) liste = liste.filter(v => v.oncelik === oncelik);
+  if (serbest) {
+    liste = liste.filter(v => `${v.hasta_ad} ${v.tckn} ${v.tetkik}`.toLowerCase().includes(serbest));
+  }
+
+  const tbody = document.getElementById("worklistGovde");
+  const bos = document.getElementById("tabloBosDurum");
+
+  document.getElementById("sonucSayisi").textContent = `${liste.length} kayıt`;
+
+  if (liste.length === 0) {
+    tbody.innerHTML = "";
+    bos.style.display = "block";
+    return;
+  }
+  bos.style.display = "none";
+
+  tbody.innerHTML = liste.map(v => `
+    <tr class="${v.id === seciliVakaId ? 'secili' : ''}" onclick="drawerAc('${v.id}')">
+      <td>${v.hasta_ad}</td>
+      <td class="dim">${v.tckn}</td>
+      <td class="dim">${v.hastane || '—'}</td>
+      <td>${v.tetkik}</td>
+      <td class="dim">${v.bolum}</td>
+      <td class="bulgu-hucre" title="${v.bulgu}">${v.bulgu}</td>
+      <td>${v.oncelik === 'ACIL' ? '🔴 Acil' : v.sure_ay + ' Ay'}</td>
+      <td class="dim">${tarihFormatla(v.kayit_tarihi)}</td>
+      <td class="dim">${tarihFormatla(v.kontrol_tarihi)}</td>
+      <td><span class="durum-pill ${v.durum}">${v.durum.replace(/_/g, ' ')}</span></td>
+    </tr>
+  `).join("");
+}
+
+// ---------------- Drawer ----------------
+
+function drawerAc(vakaId) {
+  const v = tumVakalar.find(x => x.id === vakaId);
+  if (!v) return;
+  seciliVakaId = vakaId;
+
+  document.getElementById("drawerIsim").textContent = v.hasta_ad;
+  document.getElementById("drawerTckn").textContent = `TCKN: ${v.tckn}${v.accession ? ' · ' + v.accession : ''}`;
+  document.getElementById("drawerTetkik").textContent = `${v.tetkik} — ${v.bolum}`;
+  document.getElementById("drawerBulgu").textContent = v.bulgu;
+  document.getElementById("drawerKayit").textContent = tarihFormatla(v.kayit_tarihi);
+  document.getElementById("drawerKontrol").textContent = tarihFormatla(v.kontrol_tarihi);
+  const pill = document.getElementById("drawerDurumPill");
+  pill.className = `durum-pill ${v.durum}`;
+  pill.textContent = v.durum.replace(/_/g, ' ');
+  document.getElementById("drawerNot").value = v.klinisyen_notu || "";
+
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("drawerOverlay").classList.add("open");
+  tabloyuCiz();
+}
+
+function drawerKapat() {
+  seciliVakaId = null;
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("open");
+  tabloyuCiz();
+}
+
+async function drawerAksiyon(aksiyon) {
+  if (!seciliVakaId) return;
+  const notMetni = document.getElementById("drawerNot").value;
+  await aksiyonGonder(seciliVakaId, aksiyon, notMetni);
+  drawerKapat();
+}
+
+async function hizliAksiyon(vakaId, aksiyon) {
+  await aksiyonGonder(vakaId, aksiyon);
+}
+
+async function aksiyonGonder(vakaId, aksiyon, notMetni = "") {
+  try {
+    const res = await fetch(`${API_BASE}/api/vaka-aksiyon`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vaka_id: vakaId, aksiyon, not_metni: notMetni }),
+    });
+    if (!res.ok) throw new Error("İstek başarısız");
+    const mesajlar = { ONAYLA: "Kontrol randevusu oluşturuldu ve onaylandı.", REDDET: "Vaka ertelendi.", ESKALE_ET: "Vaka eskale edildi." };
+    toastGoster(mesajlar[aksiyon]);
+    verileriYukle();
+  } catch (err) {
+    toastGoster("Hata: " + err.message, true);
+  }
+}
+
+// ---------------- Simülasyon kontrolleri ----------------
+
+async function birAySar() {
+  const btn = document.getElementById("ilerleBtn");
+  btn.disabled = true;
+  btn.textContent = "⏳ İlerletiliyor...";
+  try {
+    const res = await fetch(`${API_BASE}/api/simulasyon/ileri-sar?ay=1`, { method: "POST" });
+    if (!res.ok) throw new Error("İstek başarısız");
+    const data = await res.json();
+    const parcalar = [];
+    if (data.klinisyene_dusen_vaka_sayisi > 0) parcalar.push(`${data.klinisyene_dusen_vaka_sayisi} vaka klinisyen onayına düştü`);
+    if (data.eskale_edilen_vaka_sayisi > 0) parcalar.push(`${data.eskale_edilen_vaka_sayisi} vaka eskale edildi`);
+    toastGoster(parcalar.length ? `+1 Ay: ${parcalar.join(', ')}.` : "+1 Ay ilerletildi, yeni aksiyon yok.");
+    verileriYukle();
+  } catch (err) {
+    toastGoster("Hata: " + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⏩ +1 Ay İleri Sar";
+  }
+}
+
+async function simulasyonuSifirla() {
+  try {
+    const res = await fetch(`${API_BASE}/api/simulasyon/sifirla`, { method: "POST" });
+    if (!res.ok) throw new Error("İstek başarısız");
+    toastGoster("Simülasyon sıfırlandı.");
+    verileriYukle();
+  } catch (err) {
+    toastGoster("Hata: " + err.message, true);
+  }
+}
+
+verileriYukle();
+setInterval(verileriYukle, 5000);
+</script>
+
+</body>
+</html>
